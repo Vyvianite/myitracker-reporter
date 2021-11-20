@@ -1,6 +1,6 @@
 {
-  "Server": "https://app.myitracker.com/",
-  "Token": "DAAAAIF6hyeERAAB2Uiq7BAAAACi+q/KjNUQP62bkTD4FV4PPcJzYBLnNpEwo5kRwMo2DaxyisKgX9AAShX+yWYniaY=",
+  "Server": "Api Server",
+  "Token": "Test Token",
   "CustomerId": "1",
   "Version": "1"
 }

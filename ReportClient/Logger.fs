@@ -5,42 +5,39 @@ open System.Text
 open System.IO
 open System.Runtime.InteropServices
 
-//This type is basically a parameterized module.
-type Logger (os) = 
-  let directory =
-    match os with 
-    | Windows x -> @"C:\ProgramData\MyItracker\MyItrackerService\"
-    | Mac x -> "./"
-    //| Linux x -> "./"
+module Logger =
+  let log os text finished =
+    let directory =
+      match os with 
+      | Windows _ -> @"C:\ProgramData\MyItracker\MyItrackerService\"
+      | Mac _ -> "./"
+      //| Linux _ -> "./"
 
-  (*Cycles between two log files so the combined size never gets more than two megs*)
-  let recycler directory =
-    let alpha = FileInfo (Path.Combine(directory, "alpha.log"))
-    let beta = FileInfo (Path.Combine(directory, "beta.log"))
+    (*Cycles between two log files so the combined size never gets more than two megs*)
+    let recycler directory =
+      let alpha = FileInfo <| Path.Combine(directory, "alpha.log")
+      let beta = FileInfo <| Path.Combine(directory, "beta.log")
 
-    //Check if the file is over a mb.
-    let tooBig (file : FileInfo) =
-      file.Exists && file.Length / 1024L / 1024L >= 1L //If file doesn't exist, it obviously isn't too big.
+      //Check if the file is over a mb.
+      let tooBig (file : FileInfo) =
+        file.Exists && file.Length / 1024L / 1024L >= 1L //If file doesn't exist, it obviously isn't too big.
 
-    //Decides which file to write too, and if they are both too big, delete the oldest one.
-    match (alpha.Exists, tooBig alpha, beta.Exists, tooBig beta) with
-    | (false, _, _, _) ->
-        alpha.Create () |> ignore
-        alpha.FullName
-    | (_, false, _, _) ->
-        alpha.FullName
-    | (_, _, false, _) ->
-        beta.Create () |> ignore
-        beta.FullName
-    | (_, _, _, false) ->
-        beta.FullName
-    | (_, _, _, _) ->
-        alpha.Delete ()
-        File.Move (beta.FullName, alpha.FullName)
-        beta.FullName
-
-  ///<summary> Writes to a platform specific log file with optional ending delimiter </summary>
-  member this.log(text, ?finished) =
+      //Decides which file to write too, and if they are both too big, delete the oldest one.
+      match (alpha.Exists, tooBig alpha, beta.Exists, tooBig beta) with
+      | (false, _, _, _) ->
+          alpha.Create () |> ignore
+          alpha.FullName
+      | (_, false, _, _) ->
+          alpha.FullName
+      | (_, _, false, _) ->
+          beta.Create () |> ignore
+          beta.FullName
+      | (_, _, _, false) ->
+          beta.FullName
+      | (_, _, _, _) ->
+          alpha.Delete ()
+          File.Move (beta.FullName, alpha.FullName)
+          beta.FullName
     try
       Directory.CreateDirectory directory |> ignore //Make sure directory exists
       let fullPath = recycler directory //recycle log files to manage size
@@ -48,10 +45,10 @@ type Logger (os) =
       writer.BaseStream.Seek(0L, SeekOrigin.End) |> ignore //Find the end of the file for appending
       writer.WriteLine (sprintf "%s; %s" text (DateTime.UtcNow.ToString "yyyy-MM-dd HH:mm:ss.fff")) //Write text and datetime
       match finished with
-      | Some x ->
+      | true ->
           writer.WriteLine "=========="
           writer.WriteLine ()
-      | None -> ()
+      | false -> ()
       writer.Flush ()
       writer.Close ()
     with
